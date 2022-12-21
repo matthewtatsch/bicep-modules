@@ -177,6 +177,37 @@ param restrictOutboundNetworkAccess bool = false
 ''')
 param userOwnedStorage array = []
 
+var apiProperties = kind == 'MetricsAdvisor' ? {
+  aadClientId: aadClientId
+  aadTenantId: aadTenantId
+  superUser: superUser
+  websiteName: websiteName 
+} : kind == 'Personalizer' ? {
+  eventHubConnectionString: eventHubConnectionString
+  storageAccountConnectionString: storageAccountConnectionString
+} : kind == 'TextAnalytics' ? {
+  qnaAzureSearchEndpointId: qnaAzureSearchEndpointId
+  qnaAzureSearchEndpointKey: qnaAzureSearchEndpointKey
+} : kind == 'QnAMaker' ? {
+  qnaAzureSearchEndpointId: qnaAzureSearchEndpointId
+  qnaAzureSearchEndpointKey: qnaAzureSearchEndpointKey
+  qnaRuntimeEndpoint: qnaRuntimeEndpoint
+} : kind == 'Bing.CustomSearch' || kind == 'Bing.Search' || kind == 'Bing.Search.v7' ? {
+  statisticsEnabled: statisticsEnabled
+} : {}
+
+var encryption = encryptionKeySource == 'Microsoft.CognitiveServices' ? {
+  keySource: encryptionKeySource
+} : encryptionKeySource == 'Microsoft.KeyVault' ? {
+  keySource: encryptionKeySource
+  keyVaultProperties: {
+    identityClientId: encryptionKeyVaultPropertiesIdentityClientId
+    keyName: encryptionKeyVaultPropertiesKeyName
+    keyVaultUri: encryptionKeyVaultPropertiesKeyVaultUri
+    keyVersion: encryptionKeyVaultPropertiesKeyVersion
+  }
+} : {}
+
 resource cognitiveServicesAccount 'Microsoft.CognitiveServices/accounts@2022-10-01' = {
   name: name
   location: location
@@ -191,42 +222,15 @@ resource cognitiveServicesAccount 'Microsoft.CognitiveServices/accounts@2022-10-
   kind: kind
   identity: {
     type: identityType
-    userAssignedIdentities: identityUserAssignedIdentities != {} ? identityUserAssignedIdentities : null
+    userAssignedIdentities: !empty(identityUserAssignedIdentities) ? identityUserAssignedIdentities : null
   }
   properties: {
     allowedFqdnList: allowedFqdnList
-    apiProperties: kind == 'MetricsAdvisor' ? {
-      aadClientId: aadClientId
-      aadTenantId: aadTenantId
-      superUser: superUser
-      websiteName: websiteName 
-    } : kind == 'Personalizer' ? {
-      eventHubConnectionString: eventHubConnectionString
-      storageAccountConnectionString: storageAccountConnectionString
-    } : kind == 'TextAnalytics' ? {
-      qnaAzureSearchEndpointId: qnaAzureSearchEndpointId
-      qnaAzureSearchEndpointKey: qnaAzureSearchEndpointKey
-    } : kind == 'QnAMaker' ? {
-      qnaAzureSearchEndpointId: qnaAzureSearchEndpointId
-      qnaAzureSearchEndpointKey: qnaAzureSearchEndpointKey
-      qnaRuntimeEndpoint: qnaRuntimeEndpoint
-    } : kind == 'Bing.CustomSearch' || kind == 'Bing.Search' || kind == 'Bing.Search.v7' ? {
-      statisticsEnabled: statisticsEnabled
-    } : {}
+    apiProperties: apiProperties
     customSubDomainName: customSubDomain
     disableLocalAuth: disableLocalAuth
     dynamicThrottlingEnabled: dynamicThrottlingEnabled
-    encryption: encryptionKeySource == 'Microsoft.CognitiveServices' ? {
-      keySource: encryptionKeySource
-    } : encryptionKeySource == 'Microsoft.KeyVault' ? {
-      keySource: encryptionKeySource
-      keyVaultProperties: {
-        identityClientId: encryptionKeyVaultPropertiesIdentityClientId
-        keyName: encryptionKeyVaultPropertiesKeyName
-        keyVaultUri: encryptionKeyVaultPropertiesKeyVaultUri
-        keyVersion: encryptionKeyVaultPropertiesKeyVersion
-      }
-    } : {}
+    encryption: encryption
     migrationToken: migrationToken
     networkAcls: {
       defaultAction: networkAclsDefaultAction
@@ -236,6 +240,6 @@ resource cognitiveServicesAccount 'Microsoft.CognitiveServices/accounts@2022-10-
     publicNetworkAccess: publicNetworkAccess
     restore: restore
     restrictOutboundNetworkAccess: restrictOutboundNetworkAccess
-    userOwnedStorage: userOwnedStorage != [] ? userOwnedStorage : null
+    userOwnedStorage: !empty(userOwnedStorage) ? userOwnedStorage : null
   }
 }
